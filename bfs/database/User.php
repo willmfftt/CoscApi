@@ -1,0 +1,132 @@
+<?php
+
+namespace Bfs\Database;
+
+use PDO;
+use PDOException;
+use Bfs\Database\Dao\UserDao;
+use Bfs\Crypto;
+use Bfs\ErrorCodes;
+use Zend\Log\Writer\Syslog;
+
+require_once 'db_config.php';
+
+/**
+ * 
+ *
+ * @author William Moffitt
+ */
+class User {
+    
+    private $dbh;
+    
+    public function __construct(PDO $dbh) {
+        $this->dbh = $dbh;
+    }
+    
+    public function create(UserDao $user) {
+        if (!self::hasRequired($user)) {
+            return array(
+                'error' => true,
+                'code'  => ErrorCodes::USER_INCOMPLETE,
+                'msg'   => "Cannot create user, missing user information"
+            );
+        }
+        
+        /* Check for existing user */
+        if ($this->userExists($user)) {
+            return $this->error(ErrorCodes::USERNAME_INVALID
+                    , "Username already exists");
+        }
+        
+        try {
+            $sql = "INSERT INTO " . USERTABLE . " (first_name, last_name, dob, email, is_moderator, date_start, modify_date)" 
+                    . " VALUES (:first_name, :last_name, :dob, :email, :is_moderator, now(), now())";
+            $stmt = $this->dbh->prepare($sql);
+            $stmt->execute(array(
+                ':first_name'   => $user->first_name,
+                ':last_name'    => $user->last_name,
+                ':dob'          => $user->dob,
+                ':email'        => $user->email,
+                ':is_moderator' => $user->is_moderator
+            ));
+            $stmt->closeCursor();             
+            
+            $user->id = $this->dbh->lastInsertId();
+            
+            if ($user->id == null) {
+                return $this->error(ErrorCodes::USER_GENERIC_ERROR
+                    , "Failed to create user");
+            }
+            
+            $user->salt = Crypto::generateSalt();
+            $user->password = Crypto::hashPassword($user->password, $user->salt);
+            
+            $sql = "INSERT INTO " . USERCREDTABLE . " (user_id, username, password, salt)"
+                    . " VALUES (:user_id, :username, :password, :salt)";
+            $stmt = $this->dbh->prepare($sql);            
+            $stmt->execute(array(
+                ':user_id'  => $user->id,
+                ':username' => $user->username,
+                ':password' => $user->password,
+                ':salt'     => $user->salt
+            ));
+            $stmt->closeCursor();
+            
+            if ($this->dbh->lastInsertId() == null) {
+                return $this->error(ErrorCodes::USER_GENERIC_ERROR
+                    , "Failed to create user");
+            }
+            
+            return $user;
+        } catch (PDOException $e) {
+            $syslog = new Syslog();
+            $syslog->write($e);
+            $syslog->shutdown();
+            
+            return $this->error(ErrorCodes::USER_GENERIC_ERROR
+                    , "Failed to create user");
+        }
+    }
+    
+    public function userExists(UserDao $user) {
+        try {
+            $sql = "SELECT u.id FROM " . USERTABLE . " AS u"
+                    . " JOIN " . USERCREDTABLE . " AS uc ON uc.user_id=u.id"
+                    . " WHERE uc.username=:username";
+            $stmt = $this->dbh->prepare($sql);
+            $stmt->setFetchMode(PDO::FETCH_ASSOC);
+            $stmt->execute(array(':username' => $user->username));           
+            
+            $rowCount = count($stmt->fetchAll());
+            $stmt->closeCursor();
+            
+            return $rowCount > 0;
+        } catch (PDOException $ex) {
+            $syslog = new Syslog();
+            $syslog->write($ex);
+            $syslog->shutdown();
+            
+            return $this->error(ErrorCodes::USER_GENERIC_ERROR
+                    , "Failed to find user");
+        }
+    }
+    
+    private static function hasRequired(UserDao $user) {
+        return (isset($user->first_name) 
+                && isset($user->last_name)
+                && isset($user->username)
+                && isset($user->password)
+                && isset($user->dob)
+                && isset($user->email));
+    }
+    
+    private function error($errorCode, $msg) {
+        return array(
+            'error' => true,
+            'code'  => $errorCode,
+            'msg'   => $msg
+        );
+    }
+    
+}
