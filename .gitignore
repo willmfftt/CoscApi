@@ -6,7 +6,6 @@ nbproject
 .idea
 .project
 .settings
-vendor/
 public/vendor/
 config/development.config.php
 config/autoload/local.php
