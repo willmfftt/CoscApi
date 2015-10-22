@@ -76,7 +76,8 @@ class User {
             }
             
             return array(
-                'id' => $user->id
+                'error' => false,
+                'id'    => $user->id
             );
         } catch (PDOException $e) {
             $syslog = new Syslog();
@@ -86,6 +87,10 @@ class User {
             return $this->error(ErrorCodes::USER_GENERIC_ERROR
                     , "Failed to create user");
         }
+    }
+    
+    public function read(UserDao $user) {
+        
     }
     
     public function userExists(UserDao $user) {
