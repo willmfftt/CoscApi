@@ -2,7 +2,8 @@
 
 namespace Bfs\Database;
 
-require_once('db_config');
+use PDO;
+use PDOException;
 
 /**
  * Provides single class for database connection

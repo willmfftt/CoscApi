@@ -24,6 +24,22 @@ if (!file_exists('vendor/autoload.php')) {
 // Setup autoloading
 include 'vendor/autoload.php';
 
+foreach(glob('bfs/*.php') as $filename) {
+    include $filename;
+}
+
+foreach(glob('bfs/database/*.php') as $filename) {
+    include $filename;
+}
+
+foreach(glob('bfs/database/dao/*.php') as $filename) {
+    include $filename;
+}
+
+foreach(glob('bfs/login/*.php') as $filename) {
+    include $filename;
+}
+
 if (!defined('APPLICATION_PATH')) {
     define('APPLICATION_PATH', realpath(__DIR__ . '/../'));
 }

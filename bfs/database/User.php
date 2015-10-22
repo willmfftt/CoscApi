@@ -9,8 +9,6 @@ use Bfs\Crypto;
 use Bfs\ErrorCodes;
 use Zend\Log\Writer\Syslog;
 
-require_once 'db_config.php';
-
 /**
  * 
  *
@@ -43,29 +41,28 @@ class User {
             $sql = "INSERT INTO " . USERTABLE . " (first_name, last_name, dob, email, is_moderator, date_start, modify_date)" 
                     . " VALUES (:first_name, :last_name, :dob, :email, :is_moderator, now(), now())";
             $stmt = $this->dbh->prepare($sql);
-            $stmt->execute(array(
+            $result = $stmt->execute(array(
                 ':first_name'   => $user->first_name,
                 ':last_name'    => $user->last_name,
                 ':dob'          => $user->dob,
                 ':email'        => $user->email,
-                ':is_moderator' => $user->is_moderator
+                ':is_moderator' => 0
             ));
-            $stmt->closeCursor();             
+            $stmt->closeCursor(); 
             
-            $user->id = $this->dbh->lastInsertId();
-            
-            if ($user->id == null) {
+            if (!$result) {
                 return $this->error(ErrorCodes::USER_GENERIC_ERROR
                     , "Failed to create user");
             }
             
+            $user->id = $this->dbh->lastInsertId();
             $user->salt = Crypto::generateSalt();
             $user->password = Crypto::hashPassword($user->password, $user->salt);
             
             $sql = "INSERT INTO " . USERCREDTABLE . " (user_id, username, password, salt)"
                     . " VALUES (:user_id, :username, :password, :salt)";
             $stmt = $this->dbh->prepare($sql);            
-            $stmt->execute(array(
+            $result = $stmt->execute(array(
                 ':user_id'  => $user->id,
                 ':username' => $user->username,
                 ':password' => $user->password,
@@ -73,12 +70,14 @@ class User {
             ));
             $stmt->closeCursor();
             
-            if ($this->dbh->lastInsertId() == null) {
+            if (!$result) {
                 return $this->error(ErrorCodes::USER_GENERIC_ERROR
                     , "Failed to create user");
             }
             
-            return $user;
+            return array(
+                'id' => $user->id
+            );
         } catch (PDOException $e) {
             $syslog = new Syslog();
             $syslog->write($e);
