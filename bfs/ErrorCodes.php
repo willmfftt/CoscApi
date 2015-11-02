@@ -14,4 +14,7 @@ class ErrorCodes {
     const USERNAME_INVALID = 2;
     const PASSWORD_INVALID = 3;
     
+    const BAND_INCOMPLETE = 4;
+    const BAND_GENERIC_ERROR = 5;
+    
 }
