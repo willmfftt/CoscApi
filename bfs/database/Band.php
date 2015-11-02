@@ -31,7 +31,7 @@ class Band {
         
         
         try {
-            $sql = "INSERT INTO " . BANDTABLE . " (name, date_start) VALUES (:name, :date_start)";
+            $sql = "INSERT INTO " . BANDTABLE . " (name, date_start, modify_date) VALUES (:name, :date_start, now())";
             $stmt = $this->dbh->prepare($sql);
             $result = $stmt->execute(array(
                 ':name'       => $bandDao->name,

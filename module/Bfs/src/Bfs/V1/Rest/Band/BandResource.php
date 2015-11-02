@@ -3,6 +3,12 @@ namespace Bfs\V1\Rest\Band;
 
 use ZF\ApiProblem\ApiProblem;
 use ZF\Rest\AbstractResourceListener;
+use Bfs\Database\Connection;
+use Bfs\Database\Band;
+use Bfs\Database\Dao\BandDao;
+use Bfs\Login\Login;
+use Bfs\Database\Dao\UserDao;
+use Bfs\ErrorCodes;
 
 class BandResource extends AbstractResourceListener
 {
@@ -14,7 +20,33 @@ class BandResource extends AbstractResourceListener
      */
     public function create($data)
     {
-        return new ApiProblem(405, 'The POST method has not been defined');
+        $userDao = new UserDao();
+        $userDao->username = $data->username;
+        $userDao->password = $data->password;
+        
+        $login = new Login();
+        $result = $login->login($userDao);
+        
+        if ($result['error']) {
+            return $result;
+        }
+        
+        if ($result['is_moderator'] != 1) {
+            return array(
+                'error' => true,
+                'code'  => ErrorCodes::NOT_MODERATOR,
+                'msg'   => "Only moderators can create bands"
+            );
+        }
+        
+        $bandDao = new BandDao();
+        $bandDao->name = $data->name;
+        $bandDao->date_start = $data->date_start;
+        
+        $conn = new Connection();
+        $band = new Band($conn->getPdo());
+        
+        return $band->create($bandDao);
     }
 
     /**

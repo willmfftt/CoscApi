@@ -17,4 +17,6 @@ class ErrorCodes {
     const BAND_INCOMPLETE = 4;
     const BAND_GENERIC_ERROR = 5;
     
+    const NOT_MODERATOR = 6;
+    
 }
