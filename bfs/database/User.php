@@ -90,7 +90,35 @@ class User {
     }
     
     public function read(UserDao $user) {
+        if (!isset($user->username) && count($user->username) == 0) {
+            return $this->error(ErrorCodes::USER_INCOMPLETE
+                    , "Not enough information provided");
+        }
         
+        try {
+            $sql = "SELECT * FROM " . USERTABLE . " AS u"
+                    . " JOIN " . USERCREDTABLE . " AS uc ON u.id=uc.user_id" 
+                    . " WHERE uc.username=:username";
+            $stmt = $this->dbh->prepare($sql);
+            $stmt->setFetchMode(PDO::FETCH_CLASS, "Bfs\\Database\\Dao\\UserDao");
+            $stmt->execute(array(':username' => $user->username));
+            
+            $userDao = $stmt->fetch();
+            
+            if (!($userDao instanceof UserDao)) {
+                return $this->error(ErrorCodes::USER_GENERIC_ERROR
+                        , "Failed to read user");
+            }
+            
+            return $userDao;
+        } catch (PDOException $ex) {
+            $syslog = new Syslog();
+            $syslog->write($ex);
+            $syslog->shutdown();
+            
+            return $this->error(ErrorCodes::USER_GENERIC_ERROR
+                    , "Failed to read user");
+        }
     }
     
     public function userExists(UserDao $user) {
