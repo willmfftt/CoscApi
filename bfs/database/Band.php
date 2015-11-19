@@ -61,7 +61,7 @@ class Band {
     
     public function readAll() {
         try {
-            $sql = "SELECT * FROM " . BANDTABLE;
+            $sql = "SELECT * FROM " . BANDTABLE . " WHERE date_thru IS NULL ORDER BY name";
             $stmt = $this->dbh->prepare($sql);
             $stmt->setFetchMode(PDO::FETCH_ASSOC);
             $stmt->execute();
