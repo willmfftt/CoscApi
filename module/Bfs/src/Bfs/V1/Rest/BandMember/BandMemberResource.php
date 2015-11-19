@@ -1,16 +1,13 @@
 <?php
-namespace Bfs\V1\Rest\Band;
+namespace Bfs\V1\Rest\BandMember;
 
 use ZF\ApiProblem\ApiProblem;
 use ZF\Rest\AbstractResourceListener;
+use Bfs\Database\Dao\BandMemberDao;
 use Bfs\Database\Connection;
-use Bfs\Database\Band;
-use Bfs\Database\Dao\BandDao;
-use Bfs\Login\Login;
-use Bfs\Database\Dao\UserDao;
-use Bfs\ErrorCodes;
+use Bfs\Database\BandMember;
 
-class BandResource extends AbstractResourceListener
+class BandMemberResource extends AbstractResourceListener
 {
     /**
      * Create a resource
@@ -20,33 +17,14 @@ class BandResource extends AbstractResourceListener
      */
     public function create($data)
     {
-        $userDao = new UserDao();
-        $userDao->username = $data->username;
-        $userDao->password = $data->password;
-        
-        $login = new Login();
-        $result = $login->login($userDao);
-        
-        if ($result['error']) {
-            return $result;
-        }
-        
-        if ($result['is_moderator'] != 1) {
-            return array(
-                'error' => true,
-                'code'  => ErrorCodes::NOT_MODERATOR,
-                'msg'   => "Only moderators can create bands"
-            );
-        }
-        
-        $bandDao = new BandDao();
-        $bandDao->name = $data->name;
-        $bandDao->date_start = $data->date_start;
+        $dao = new BandMemberDao();
+        $dao->first_name = $data->first_name;
+        $dao->last_name = $data->last_name;
         
         $conn = new Connection();
-        $band = new Band($conn->getPdo());
+        $bandMember = new BandMember($conn->getPdo());
         
-        return $band->create($bandDao);
+        return $bandMember->create($dao);
     }
 
     /**
@@ -89,24 +67,8 @@ class BandResource extends AbstractResourceListener
      * @return ApiProblem|mixed
      */
     public function fetchAll($params = array())
-    {        
-        $login = new Login();
-        
-        $userDao = new UserDao();
-        $userDao->username = filter_input(INPUT_GET, 'username');
-        $userDao->password = filter_input(INPUT_GET, 'password');
-        
-        $result = $login->login($userDao);
-        
-        if ($result['error']) {
-            return $result;
-        }
-        
-        $conn = new Connection();
-        $band = new Band($conn->getPdo());
-        $bands = $band->readAll();
-        
-        return $bands;
+    {
+        return new ApiProblem(405, 'The GET method has not been defined for collections');
     }
 
     /**
