@@ -59,6 +59,36 @@ class Band {
         }
     }
     
+    public function readAll() {
+        try {
+            $sql = "SELECT * FROM " . BANDTABLE . " WHERE date_thru IS NULL ORDER BY name";
+            $stmt = $this->dbh->prepare($sql);
+            $stmt->setFetchMode(PDO::FETCH_ASSOC);
+            $stmt->execute();
+            $bands = $stmt->fetchAll();
+            $stmt->closeCursor();
+            
+            if (!$bands) {
+                return array(
+                    'error' => true
+                );
+            }
+
+            return array(
+                'error' => false,
+                'bands' => $bands
+            );
+        } catch (PDOException $ex) {
+            $syslog = new Syslog();
+            $syslog->write($ex);
+            $syslog->shutdown();
+            
+            return array(
+                'error' => true
+            );
+        }
+    }
+    
     private static function hasRequired(BandDao $bandDao) {
         return (!(is_null($bandDao->name) || is_null($bandDao->date_start)));
     }
