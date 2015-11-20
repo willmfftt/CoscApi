@@ -4,17 +4,15 @@ namespace Bfs\Database;
 
 use PDO;
 use PDOException;
-use Zend\Log\Writer\Syslog;
-use Bfs\Database\Dao\BandMemberDao;
-use Bfs\Database\BandMemberRel;
 use Bfs\Database\Dao\BandMemberRelDao;
+use Zend\Log\Writer\Syslog;
 
 /**
  * 
  *
  * @author William Moffitt
  */
-class BandMember {
+class BandMemberRel {
     
     private $dbh;
     
@@ -22,33 +20,27 @@ class BandMember {
         $this->dbh = $dbh;
     }
     
-    public function create(BandMemberDao $bandMemberDao, BandMemberRelDao $bandMemberRelDao) {
+    public function create(BandMemberRelDao $dao) {
         try {
-            $sql = "INSERT INTO " . BANDMEMBERTABLE . "(first_name, last_name) VALUES (:first_name, :last_name)";
+            $sql = "INSERT INTO " . BANDMEMBERRELTABLE 
+                    . "(band_id, band_member_id, date_start) VALUES (:band_id, :band_member_id, :date_start)";
             $stmt = $this->dbh->prepare($sql);
             $result = $stmt->execute(array(
-                ':first_name' => $bandMemberDao->first_name,
-                ':last_name'  => $bandMemberDao->last_name
+                ':band_id'        => $dao->band_id,
+                ':band_member_id' => $dao->band_member_id,
+                ':date_start'     => $dao->date_start
             ));
             $stmt->closeCursor();
-            
+   
             if (!$result) {
                 return array(
                     'error' => true
                 );
             }
             
-            $bandMemberRelDao->band_member_id = $this->dbh->lastInsertId();
-            $bandMemberRel = new BandMemberRel($this->dbh);
-            $result = $bandMemberRel->create($bandMemberRelDao);
-            
-            if ($result['error']) {
-                return $result;
-            }
-            
             return array(
                 'error' => false,
-                'id'    => $bandMemberRelDao->band_member_id
+                'id'    => $this->dbh->lastInsertId()
             );
         } catch (PDOException $ex) {
             $syslog = new Syslog();
