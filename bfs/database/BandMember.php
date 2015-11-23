@@ -6,6 +6,7 @@ use PDO;
 use PDOException;
 use Zend\Log\Writer\Syslog;
 use Bfs\Database\Dao\BandMemberDao;
+use Bfs\Database\Dao\BandDao;
 use Bfs\Database\BandMemberRel;
 use Bfs\Database\Dao\BandMemberRelDao;
 
@@ -49,6 +50,42 @@ class BandMember {
             return array(
                 'error' => false,
                 'id'    => $bandMemberRelDao->band_member_id
+            );
+        } catch (PDOException $ex) {
+            $syslog = new Syslog();
+            $syslog->write($ex);
+            $syslog->shutdown();
+            
+            return array(
+                'error' => true
+            );
+        }
+    }
+    
+    public function readMembersForBand(BandDao $dao) {
+        try {
+            $sql = "SELECT bm.first_name, bm.last_name, bmr.date_start FROM " . BANDMEMBERRELTABLE . " AS bmr "
+                    . "JOIN " . BANDTABLE . " AS b "
+                    . "ON bmr.band_id=b.id "
+                    . "JOIN " . BANDMEMBERTABLE . " AS bm "
+                    . "ON bmr.band_member_id=bm.id "
+                    . "WHERE b.id=:band_id AND bmr.date_thru IS NULL";
+            $stmt = $this->dbh->prepare($sql);
+            $stmt->setFetchMode(PDO::FETCH_ASSOC);
+            $result = $stmt->execute(array(':band_id'=>$dao->id));
+            
+            if (!$result) {
+                return array(
+                    'error' => true
+                );
+            }
+            
+            $data = $stmt->fetchAll();
+            $stmt->closeCursor();
+            
+            return array(
+                'error'        => false,
+                'band_members' => $data
             );
         } catch (PDOException $ex) {
             $syslog = new Syslog();
