@@ -56,17 +56,15 @@ class User {
             }
             
             $user->id = $this->dbh->lastInsertId();
-            $user->salt = Crypto::generateSalt();
-            $user->password = Crypto::hashPassword($user->password, $user->salt);
+            $user->password = Crypto::hashPassword($user->password);
             
-            $sql = "INSERT INTO " . USERCREDTABLE . " (user_id, username, password, salt)"
-                    . " VALUES (:user_id, :username, :password, :salt)";
+            $sql = "INSERT INTO " . USERCREDTABLE . " (user_id, username, password)"
+                    . " VALUES (:user_id, :username, :password)";
             $stmt = $this->dbh->prepare($sql);            
             $result = $stmt->execute(array(
                 ':user_id'  => $user->id,
                 ':username' => $user->username,
-                ':password' => $user->password,
-                ':salt'     => $user->salt
+                ':password' => $user->password
             ));
             $stmt->closeCursor();
             

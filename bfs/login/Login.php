@@ -32,8 +32,7 @@ class Login {
             return $result;
         }
         
-        $hashedPassword = Crypto::hashPassword($userDao->password, $result->salt);
-        if ($result->password == $hashedPassword) {
+        if (password_verify($userDao->password, $result->password)) {
             return array(
                 'error'        => false,
                 'id'           => $result->id,
