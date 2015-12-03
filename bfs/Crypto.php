@@ -9,16 +9,12 @@ namespace Bfs;
  */
 class Crypto {
     
-    public static function hashPassword($password, $salt) {
-        if (!(isset($password) || isset($salt))) {
+    public static function hashPassword($password) {
+        if (!(isset($password))) {
             return false;
         }
         
-        return hash_hmac('sha256', $password, $salt);
-    }
-    
-    public static function generateSalt() {
-        return md5(uniqid());
+        return password_hash($password, PASSWORD_BCRYPT);
     }
     
 }

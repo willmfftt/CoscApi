@@ -14,7 +14,6 @@ class UserDao {
     public $last_name;
     public $username;
     public $password;
-    public $salt;
     public $dob;
     public $email;
     public $is_moderator;
