@@ -53,4 +53,36 @@ class BandMemberRel {
         }
     }
     
+    public function delete(BandMemberRelDao $dao) {
+        try {
+            $sql = "UPDATE " . BANDMEMBERRELTABLE 
+                    . " SET date_thru=:date_thru WHERE band_id=:band_id AND band_member_id=:band_member_id";
+            $stmt = $this->dbh->prepare($sql);
+            $result = $stmt->execute(array(
+                ':date_thru'      => $dao->date_thru,
+                ':band_id'        => $dao->band_id,
+                ':band_member_id' => $dao->band_member_id
+            ));
+            $stmt->closeCursor();
+            
+            if (!$result) {
+                return array(
+                    'error' => true
+                );
+            }
+            
+            return array(
+                'error' => false
+            );
+        } catch (Exception $ex) {
+            $syslog = new Syslog();
+            $syslog->write($ex);
+            $syslog->shutdown();
+            
+            return array(
+                'error' => true
+            );
+        }
+    }
+    
 }
