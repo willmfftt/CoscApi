@@ -6,6 +6,7 @@ use ZF\Rest\AbstractResourceListener;
 use Bfs\Database\Dao\BandMemberDao;
 use Bfs\Database\Connection;
 use Bfs\Database\BandMember;
+use Bfs\Database\BandMemberRel;
 use Bfs\Database\Dao\BandMemberRelDao;
 use Bfs\Database\Dao\UserDao;
 use Bfs\Database\Dao\BandDao;
@@ -61,7 +62,29 @@ class BandMemberResource extends AbstractResourceListener
      */
     public function delete($id)
     {
-        return new ApiProblem(405, 'The DELETE method has not been defined for individual resources');
+        $params = json_decode($this->getEvent()->getRequest()->getContent());
+        
+        if (!array_key_exists('date_thru', $params) 
+                || !array_key_exists('band_id', $params)) {
+            return false;
+        }        
+        $date_thru = $params->date_thru;
+        $band_id = $params->band_id;
+        
+        $bandMemberRelDao = new BandMemberRelDao();
+        $bandMemberRelDao->band_member_id = $id;
+        $bandMemberRelDao->band_id = $band_id;
+        $bandMemberRelDao->date_thru = $date_thru;
+        
+        $conn = new Connection();
+        $bandMemberRel = new BandMemberRel($conn->getPdo());
+        $result = $bandMemberRel->delete($bandMemberRelDao);
+        
+        if ($result['error']) {
+            return false;
+        } else {
+            return true;
+        }                
     }
 
     /**
